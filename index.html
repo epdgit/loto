@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Apostas — Mega-Sena</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── CABEÇALHO + ABAS (fixos) ──────────────────────────── -->
+<div class="sticky-header">
+<header class="app-header">
+    <span class="header-icon">🍀</span>
+    <div>
+        <h1>Gerador de Apostas — Mega-Sena</h1>
+        <div class="subtitle">Análise estatística · Geração inteligente de jogos</div>
+    </div>
+</header>
+<nav class="tab-bar">
+    <button class="tab-btn active" data-tab="main">📊 Principal</button>
+    <button class="tab-btn" data-tab="outros">🎲 Outros Jogos</button>
+</nav>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     ABA PRINCIPAL
+     ════════════════════════════════════════════════════════ -->
+<div id="tab-main" class="tab-content active">
+<div class="page-with-sidebar">
+
+    <!-- ── COLUNA PRINCIPAL ───────────────────────────────── -->
+    <div class="main-col">
+
+        <!-- 1. CARREGAR ODS -->
+        <div class="card">
+            <div class="card-header">📂 Dados da Mega-Sena (arquivo ODS)</div>
+            <div class="card-body">
+                <div class="ods-load-area">
+                    <label class="file-label" for="ods-file-input">
+                        📂 Carregar Mega_teste.ods
+                    </label>
+                    <input type="file" id="ods-file-input" accept=".ods">
+                    <span id="ods-status" class="muted">Nenhum arquivo carregado.</span>
+                </div>
+                <p id="ods-info" style="margin-top:8px"></p>
+            </div>
+        </div>
+
+        <!-- 2. PROBABILIDADES -->
+        <div class="card">
+            <div class="card-header">📈 Probabilidades de Acerto — 1 aposta vs. grupo</div>
+            <div class="card-body">
+                <p class="muted" style="margin-bottom:10px">
+                    Total de combinações possíveis para cada tamanho de grupo.
+                    Barra mais larga = mais combinações (grupo maior).
+                </p>
+                <table class="prob-table">
+                    <thead>
+                        <tr>
+                            <th>Grupo</th>
+                            <th>Combinações</th>
+                            <th>Odds (1 aposta)</th>
+                            <th>Combinações (escala log)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prob-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. HISTÓRICO (hidden until ODS loaded) -->
+        <div class="card hidden" id="section-historico">
+            <div class="card-header">📜 Histórico — Últimos 80 concursos</div>
+            <div class="card-body">
+                <p class="muted" style="margin-bottom:10px">
+                    Para cada concurso: quantos concursos anteriores foram necessários para cobrir
+                    todos os 6 números sorteados (<strong>sena</strong>) e pelo menos 5
+                    (<strong>quina</strong>).
+                </p>
+                <div style="overflow-x:auto">
+                    <table class="prob-table hist-table">
+                        <thead>
+                            <tr>
+                                <th>Concurso</th>
+                                <th>Data</th>
+                                <th>Dezenas</th>
+                                <th style="text-align:center">Sena<br><small>(conc.)</small></th>
+                                <th style="text-align:center">Quina<br><small>(conc.)</small></th>
+                            </tr>
+                        </thead>
+                        <tbody id="historico-body"></tbody>
+                    </table>
+                </div>
+                <hr class="section-divider" style="margin:16px 0">
+                <div class="hist-summaries">
+                    <div class="hist-summary-block">
+                        <div class="subsection-title">Resumo de repetição (sena)</div>
+                        <table class="prob-table" style="font-size:12px;min-width:220px">
+                            <thead><tr><th>Últimos conc.</th><th>Cobertura</th></tr></thead>
+                            <tbody>
+                                <tr><td>u5</td><td>200c (24n ou+)</td></tr>
+                                <tr><td>u7</td><td>76c (31n ou+)</td></tr>
+                                <tr><td>u8</td><td>28c (33n ou+)</td></tr>
+                                <tr><td>u9</td><td>23c (36n ou+)</td></tr>
+                                <tr><td>u10</td><td>14c (39n ou+)</td></tr>
+                                <tr><td>u11</td><td>10c (40n ou+)</td></tr>
+                                <tr><td>u12</td><td>8c (41n ou+)</td></tr>
+                                <tr><td>u13</td><td>6c (44n ou+)</td></tr>
+                                <tr><td>u17</td><td>3c</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="hist-summary-block">
+                        <div class="subsection-title">Resumo atraso 20 + último (sena)</div>
+                        <table class="prob-table" style="font-size:12px;min-width:200px">
+                            <thead><tr><th>Últimos conc.</th><th>Frequência</th></tr></thead>
+                            <tbody>
+                                <tr><td>u9</td><td>12%</td></tr>
+                                <tr><td>u10</td><td>15%</td></tr>
+                                <tr><td>u17</td><td>59%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. ANÁLISE ODS -->
+        <div class="card hidden" id="section-analysis">
+            <div class="card-header">🔍 Análise dos Concursos</div>
+            <div class="card-body">
+
+                <!-- 4a. Grupos pré-definidos -->
+                <div class="subsection">
+                    <div class="subsection-title">📦 Grupos Pré-definidos</div>
+                    <p class="muted" style="margin-bottom:10px">Clique em "Usar este grupo" para definir o grupo final com os números sorteados nos últimos N concursos.</p>
+                    <div class="pregroups-grid" id="pregroups-container"></div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- 4b. Números atrasados -->
+                <div class="subsection">
+                    <div class="subsection-title">⏱ Números com Atraso ≥ 20 concursos</div>
+                    <div id="delayed-container"></div>
+                    <div id="delayed-ranking"></div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- 4c. Análise por faixas -->
+                <div class="subsection">
+                    <div class="subsection-title">🎯 Presença de Faixas nos Últimos 5 Concursos</div>
+                    <p class="muted" style="margin-bottom:10px">Faixas detectadas nos últimos 5 concursos — exclua do grupo se desejar.</p>
+                    <div id="ranges-container"></div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- 4d. Faixas repetidas -->
+                <div class="subsection">
+                    <div class="subsection-title">🔢 Faixas repetidas (20 números ou +)</div>
+                    <p class="muted" style="margin-bottom:10px">
+                        Concursos consecutivos em que cada faixa ampla esteve presente (pelo menos 1 número sorteado na faixa).
+                        <strong>Destaque</strong> quando o limiar for atingido.
+                    </p>
+                    <div id="faixas-repetidas-container"></div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- 4e. Repetições últimos 3 e 4 -->
+                <div class="subsection">
+                    <div class="subsection-title">🔁 Repetições nos Últimos 3 e 4 Concursos</div>
+                    <p class="muted" style="margin-bottom:8px">Detecção positiva quando há repetição em cada par sequencial consecutivo (3º→2º→1º para 3 concursos; 4º→3º→2º→1º para 4 concursos).</p>
+                    <div id="rep3-container"></div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- 4f. Repetições últimos 10 -->
+                <div class="subsection">
+                    <div class="subsection-title">🔁 Repetições nos Últimos 10 Concursos</div>
+                    <div id="rep10-container"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 5. APOSTAS PRÉ-DEFINIDAS -->
+        <div class="card">
+            <div class="card-header">⭐ Apostas Pré-definidas</div>
+            <div class="card-body">
+                <p class="muted" style="margin-bottom:12px">Clique para incluir uma aposta pré-definida na lista gerada.</p>
+                <div class="prebet-grid" id="predefined-container"></div>
+            </div>
+        </div>
+
+        <!-- 6. CALCULADORA -->
+        <div class="card">
+            <div class="card-header">🧮 Calculadora de Probabilidades</div>
+            <div class="card-body">
+                <p class="muted" style="margin-bottom:12px">
+                    Informe o valor total e o valor individual para calcular quantas apostas você terá
+                    e a probabilidade de acerto no universo de 60 números.
+                </p>
+                <div class="calc-row">
+                    <label>Valor total (R$):</label>
+                    <input type="number" id="calc-total" min="0" step="0.01" placeholder="Ex: 100">
+                    <label>Valor por aposta (R$):</label>
+                    <input type="number" id="calc-individual" min="0" step="0.01" placeholder="Ex: 5">
+                    <button class="btn-blue btn-sm" onclick="calcOdds()">Calcular</button>
+                </div>
+                <div id="calc-result"><span class="muted">Preencha os valores acima e clique em Calcular.</span></div>
+            </div>
+        </div>
+
+    </div><!-- /main-col -->
+
+    <!-- ── SIDEBAR DIREITA (fixa) ─────────────────────────── -->
+    <div class="sidebar-col">
+
+        <!-- GRUPO FINAL -->
+        <div class="card" id="section-group">
+            <div class="card-header">🎯 Grupo Final de Apostas</div>
+            <div class="card-body">
+                <div class="group-stats">
+                    <div class="group-stat">
+                        <div class="stat-val" id="group-count">0</div>
+                        <div class="stat-lbl">Números</div>
+                    </div>
+                    <div class="group-stat" style="flex:1">
+                        <div class="stat-val" style="font-size:13px;line-height:1.3" id="group-odds">—</div>
+                        <div class="stat-lbl">Odds (6 dezenas)</div>
+                    </div>
+                </div>
+                <div class="compact-controls">
+                    <button class="btn-primary btn-sm" onclick="selectAllNumbers()">✓ Todos</button>
+                    <button class="btn-danger btn-sm" onclick="clearGroup()">🗑 Limpar</button>
+                </div>
+                <div id="group-grid" class="group-grid-inline"></div>
+            </div>
+        </div>
+
+        <!-- CONFIGURAÇÕES -->
+        <div class="card">
+            <div class="card-header">⚙️ Configurações das Apostas</div>
+            <div class="card-body">
+                <div class="sidebar-settings">
+                    <label class="setting-lbl">
+                        Números por aposta
+                        <select id="bet-size">
+                            <option value="6">6 números</option>
+                            <option value="7">7 números</option>
+                            <option value="8">8 números</option>
+                            <option value="9">9 números</option>
+                        </select>
+                    </label>
+                    <label class="setting-lbl">
+                        Tipo de geração
+                        <select id="bet-repetition">
+                            <option value="no">Sem repetição</option>
+                            <option value="yes">Com repetição</option>
+                        </select>
+                    </label>
+                    <label class="setting-lbl">
+                        Valor individual (R$) <em style="font-weight:400;font-size:11px">(opcional)</em>
+                        <input type="text" id="bet-value" placeholder="Ex: 5,00">
+                    </label>
+                    <label class="setting-lbl">
+                        Quantidade de apostas
+                        <div class="bet-count-row">
+                            <input type="range" id="bet-count" min="1" max="100" value="10">
+                            <input type="number" id="bet-count-input" min="1" max="100" value="10">
+                        </div>
+                        <span class="muted" id="bet-count-max-info" style="font-size:11px;margin-top:2px;display:block"></span>
+                    </label>
+                </div>
+                <button class="btn-blue" id="btn-generate" onclick="generateBets()" disabled style="width:100%;margin-top:12px">
+                    🎲 Gerar Apostas
+                </button>
+            </div>
+        </div>
+
+        <!-- APOSTAS GERADAS -->
+        <div class="card" id="section-bets">
+            <div class="card-header">📋 Apostas Geradas</div>
+            <div class="card-body">
+                <div id="bets-list"><p class="muted">Nenhuma aposta gerada ainda.</p></div>
+                <p id="bet-cost" class="hidden"></p>
+                <div class="btn-row" style="margin-top:10px">
+                    <button class="btn-outline btn-sm" id="btn-add-one" onclick="addRandomBet()" disabled>➕ Nova</button>
+                    <button class="btn-secondary btn-sm" id="btn-clear-bets" onclick="clearBets()" disabled>🗑 Limpar</button>
+                    <button class="btn-primary btn-sm" id="btn-print" onclick="printPDF()" disabled style="margin-left:auto">🖨️ PDF</button>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /sidebar-col -->
+
+</div><!-- /page-with-sidebar -->
+</div><!-- /tab-main -->
+
+<!-- ════════════════════════════════════════════════════════
+     ABA OUTROS JOGOS
+     ════════════════════════════════════════════════════════ -->
+<div id="tab-outros" class="tab-content">
+    <div class="outros-wrapper">
+
+        <!-- Sub-abas de tipo de jogo -->
+        <nav class="subtab-bar">
+            <button class="subtab-btn active" data-game="quina">🍀 Quina</button>
+            <button class="subtab-btn" data-game="duplasena">🎯 Dupla-Sena</button>
+            <button class="subtab-btn" data-game="lotofacil">🌟 Lotofácil</button>
+            <button class="subtab-btn" data-game="milionaria">💎 Milionária</button>
+        </nav>
+
+        <!-- ── QUINA ──────────────────────────────────────────── -->
+        <div id="game-quina" class="game-panel active">
+        <div class="page-with-sidebar">
+            <div class="main-col">
+                <div class="card">
+                    <div class="card-header">🍀 Quina — Seletor de Números (1–80)</div>
+                    <div class="card-body">
+                        <div class="selector-controls" style="margin-bottom:14px">
+                            <button class="btn-primary btn-sm" onclick="ojSelectAll('quina')">✓ Selecionar Todos</button>
+                            <button class="btn-danger btn-sm" onclick="ojClearAll('quina')">🗑 Limpar Seleção</button>
+                            <span class="selector-info"><strong id="quina-count">0</strong> números selecionados</span>
+                        </div>
+                        <div id="quina-odds-info"></div>
+                        <div id="quina-grid" class="oj-grid"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-col">
+                <div class="card">
+                    <div class="card-header">⚙️ Configurações — Quina</div>
+                    <div class="card-body">
+                        <div class="sidebar-settings">
+                            <label class="setting-lbl">Números por aposta
+                                <select id="quina-betsize">
+                                    <option value="5">5 números</option>
+                                    <option value="6">6 números</option>
+                                    <option value="7">7 números</option>
+                                    <option value="8">8 números</option>
+                                    <option value="9">9 números</option>
+                                    <option value="10">10 números</option>
+                                    <option value="11">11 números</option>
+                                    <option value="12">12 números</option>
+                                    <option value="13">13 números</option>
+                                    <option value="14">14 números</option>
+                                    <option value="15">15 números</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Tipo de geração
+                                <select id="quina-repetition">
+                                    <option value="no">Sem repetição</option>
+                                    <option value="yes">Com repetição</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Valor individual (R$) <em style="font-weight:400;font-size:11px">(opcional)</em>
+                                <input type="text" id="quina-value" placeholder="Ex: 2,00">
+                            </label>
+                            <label class="setting-lbl">Quantidade de apostas
+                                <div class="bet-count-row">
+                                    <input type="range" id="quina-count-range" min="1" max="50" value="5">
+                                    <input type="number" id="quina-count-input" min="1" max="50" value="5">
+                                </div>
+                            </label>
+                        </div>
+                        <button class="btn-blue" style="width:100%;margin-top:12px" onclick="ojGenerate('quina')">🎲 Gerar Apostas</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">📋 Apostas — Quina</div>
+                    <div class="card-body">
+                        <div id="quina-bets-list"><p class="muted">Nenhuma aposta gerada.</p></div>
+                        <p id="quina-bet-cost" class="hidden"></p>
+                        <div class="btn-row" style="margin-top:8px">
+                            <button class="btn-secondary btn-sm" id="quina-btn-clear" onclick="ojClearBets('quina')" disabled>🗑 Limpar</button>
+                            <button class="btn-primary btn-sm" id="quina-btn-print" onclick="ojPrint('quina')" disabled style="margin-left:auto">🖨️ PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- ── DUPLA-SENA ─────────────────────────────────────── -->
+        <div id="game-duplasena" class="game-panel">
+        <div class="page-with-sidebar">
+            <div class="main-col">
+                <div class="card">
+                    <div class="card-header">🎯 Dupla-Sena — Seletor de Números (1–50)</div>
+                    <div class="card-body">
+                        <div class="selector-controls" style="margin-bottom:14px">
+                            <button class="btn-primary btn-sm" onclick="ojSelectAll('duplasena')">✓ Selecionar Todos</button>
+                            <button class="btn-danger btn-sm" onclick="ojClearAll('duplasena')">🗑 Limpar Seleção</button>
+                            <span class="selector-info"><strong id="duplasena-count">0</strong> números selecionados</span>
+                        </div>
+                        <div id="duplasena-odds-info"></div>
+                        <div id="duplasena-grid" class="oj-grid"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-col">
+                <div class="card">
+                    <div class="card-header">⚙️ Configurações — Dupla-Sena</div>
+                    <div class="card-body">
+                        <div class="sidebar-settings">
+                            <label class="setting-lbl">Números por aposta
+                                <select id="duplasena-betsize">
+                                    <option value="6">6 números</option>
+                                    <option value="7">7 números</option>
+                                    <option value="8">8 números</option>
+                                    <option value="9">9 números</option>
+                                    <option value="10">10 números</option>
+                                    <option value="11">11 números</option>
+                                    <option value="12">12 números</option>
+                                    <option value="13">13 números</option>
+                                    <option value="14">14 números</option>
+                                    <option value="15">15 números</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Tipo de geração
+                                <select id="duplasena-repetition">
+                                    <option value="no">Sem repetição</option>
+                                    <option value="yes">Com repetição</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Valor individual (R$) <em style="font-weight:400;font-size:11px">(opcional)</em>
+                                <input type="text" id="duplasena-value" placeholder="Ex: 2,50">
+                            </label>
+                            <label class="setting-lbl">Quantidade de apostas
+                                <div class="bet-count-row">
+                                    <input type="range" id="duplasena-count-range" min="1" max="50" value="5">
+                                    <input type="number" id="duplasena-count-input" min="1" max="50" value="5">
+                                </div>
+                            </label>
+                        </div>
+                        <button class="btn-blue" style="width:100%;margin-top:12px" onclick="ojGenerate('duplasena')">🎲 Gerar Apostas</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">📋 Apostas — Dupla-Sena</div>
+                    <div class="card-body">
+                        <div id="duplasena-bets-list"><p class="muted">Nenhuma aposta gerada.</p></div>
+                        <p id="duplasena-bet-cost" class="hidden"></p>
+                        <div class="btn-row" style="margin-top:8px">
+                            <button class="btn-secondary btn-sm" id="duplasena-btn-clear" onclick="ojClearBets('duplasena')" disabled>🗑 Limpar</button>
+                            <button class="btn-primary btn-sm" id="duplasena-btn-print" onclick="ojPrint('duplasena')" disabled style="margin-left:auto">🖨️ PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- ── LOTOFÁCIL ──────────────────────────────────────── -->
+        <div id="game-lotofacil" class="game-panel">
+        <div class="page-with-sidebar">
+            <div class="main-col">
+                <div class="card">
+                    <div class="card-header">🌟 Lotofácil — Seletor de Números (1–25)</div>
+                    <div class="card-body">
+                        <div class="selector-controls" style="margin-bottom:14px">
+                            <button class="btn-primary btn-sm" onclick="ojSelectAll('lotofacil')">✓ Selecionar Todos</button>
+                            <button class="btn-danger btn-sm" onclick="ojClearAll('lotofacil')">🗑 Limpar Seleção</button>
+                            <span class="selector-info"><strong id="lotofacil-count">0</strong> números selecionados</span>
+                        </div>
+                        <div id="lotofacil-odds-info"></div>
+                        <div id="lotofacil-grid" class="oj-grid oj-grid-sm"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-col">
+                <div class="card">
+                    <div class="card-header">⚙️ Configurações — Lotofácil</div>
+                    <div class="card-body">
+                        <div class="sidebar-settings">
+                            <label class="setting-lbl">Números por aposta
+                                <select id="lotofacil-betsize">
+                                    <option value="15" selected>15 números</option>
+                                    <option value="16">16 números</option>
+                                    <option value="17">17 números</option>
+                                    <option value="18">18 números</option>
+                                    <option value="19">19 números</option>
+                                    <option value="20">20 números</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Tipo de geração
+                                <select id="lotofacil-repetition">
+                                    <option value="no">Sem repetição</option>
+                                    <option value="yes">Com repetição</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Valor individual (R$) <em style="font-weight:400;font-size:11px">(opcional)</em>
+                                <input type="text" id="lotofacil-value" placeholder="Ex: 3,00">
+                            </label>
+                            <label class="setting-lbl">Quantidade de apostas
+                                <div class="bet-count-row">
+                                    <input type="range" id="lotofacil-count-range" min="1" max="50" value="5">
+                                    <input type="number" id="lotofacil-count-input" min="1" max="50" value="5">
+                                </div>
+                            </label>
+                        </div>
+                        <button class="btn-blue" style="width:100%;margin-top:12px" onclick="ojGenerate('lotofacil')">🎲 Gerar Apostas</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">📋 Apostas — Lotofácil</div>
+                    <div class="card-body">
+                        <div id="lotofacil-bets-list"><p class="muted">Nenhuma aposta gerada.</p></div>
+                        <p id="lotofacil-bet-cost" class="hidden"></p>
+                        <div class="btn-row" style="margin-top:8px">
+                            <button class="btn-secondary btn-sm" id="lotofacil-btn-clear" onclick="ojClearBets('lotofacil')" disabled>🗑 Limpar</button>
+                            <button class="btn-primary btn-sm" id="lotofacil-btn-print" onclick="ojPrint('lotofacil')" disabled style="margin-left:auto">🖨️ PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- ── MILIONÁRIA ─────────────────────────────────────── -->
+        <div id="game-milionaria" class="game-panel">
+        <div class="page-with-sidebar">
+            <div class="main-col">
+                <div class="card">
+                    <div class="card-header">💎 Milionária — Seletor de Números (1–50)</div>
+                    <div class="card-body">
+                        <div class="selector-controls" style="margin-bottom:14px">
+                            <button class="btn-primary btn-sm" onclick="ojSelectAll('milionaria')">✓ Selecionar Todos</button>
+                            <button class="btn-danger btn-sm" onclick="ojClearAll('milionaria')">🗑 Limpar Seleção</button>
+                            <span class="selector-info"><strong id="milionaria-count">0</strong> números selecionados</span>
+                        </div>
+                        <div id="milionaria-odds-info"></div>
+                        <div id="milionaria-grid" class="oj-grid"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">💎 Milionária — Trevos (1–6)</div>
+                    <div class="card-body">
+                        <div class="selector-controls" style="margin-bottom:14px">
+                            <button class="btn-primary btn-sm" onclick="ojSelectAllTrevos()">✓ Todos os Trevos</button>
+                            <button class="btn-danger btn-sm" onclick="ojClearTrevos()">🗑 Limpar Trevos</button>
+                            <span class="selector-info"><strong id="milionaria-trevo-count">0</strong> trevos selecionados</span>
+                        </div>
+                        <div id="milionaria-trevo-grid" class="oj-trevo-grid"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-col">
+                <div class="card">
+                    <div class="card-header">⚙️ Configurações — Milionária</div>
+                    <div class="card-body">
+                        <div class="sidebar-settings">
+                            <label class="setting-lbl">Números por aposta
+                                <select id="milionaria-betsize">
+                                    <option value="6">6 números</option>
+                                    <option value="7">7 números</option>
+                                    <option value="8">8 números</option>
+                                    <option value="9">9 números</option>
+                                    <option value="10">10 números</option>
+                                    <option value="11">11 números</option>
+                                    <option value="12">12 números</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Trevos por aposta
+                                <select id="milionaria-trevosize">
+                                    <option value="2">2 trevos</option>
+                                    <option value="3">3 trevos</option>
+                                    <option value="4">4 trevos</option>
+                                    <option value="5">5 trevos</option>
+                                    <option value="6">6 trevos</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Tipo de geração
+                                <select id="milionaria-repetition">
+                                    <option value="no">Sem repetição</option>
+                                    <option value="yes">Com repetição</option>
+                                </select>
+                            </label>
+                            <label class="setting-lbl">Valor individual (R$) <em style="font-weight:400;font-size:11px">(opcional)</em>
+                                <input type="text" id="milionaria-value" placeholder="Ex: 6,00">
+                            </label>
+                            <label class="setting-lbl">Quantidade de apostas
+                                <div class="bet-count-row">
+                                    <input type="range" id="milionaria-count-range" min="1" max="50" value="5">
+                                    <input type="number" id="milionaria-count-input" min="1" max="50" value="5">
+                                </div>
+                            </label>
+                        </div>
+                        <button class="btn-blue" style="width:100%;margin-top:12px" onclick="ojGenerate('milionaria')">🎲 Gerar Apostas</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">📋 Apostas — Milionária</div>
+                    <div class="card-body">
+                        <div id="milionaria-bets-list"><p class="muted">Nenhuma aposta gerada.</p></div>
+                        <p id="milionaria-bet-cost" class="hidden"></p>
+                        <div class="btn-row" style="margin-top:8px">
+                            <button class="btn-secondary btn-sm" id="milionaria-btn-clear" onclick="ojClearBets('milionaria')" disabled>🗑 Limpar</button>
+                            <button class="btn-primary btn-sm" id="milionaria-btn-print" onclick="ojPrint('milionaria')" disabled style="margin-left:auto">🖨️ PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    </div><!-- /outros-wrapper -->
+</div><!-- /tab-outros -->
+
+<!-- ── SCRIPTS ─────────────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="ods-parser.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
