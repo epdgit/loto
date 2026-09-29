@@ -78,7 +78,7 @@ function renderProbabilitySection() {
 
 // ── ANÁLISE ODS ────────────────────────────────────────────
 function computePreGroups() {
-    return [5, 7, 8, 9, 10, 11, 12, 13, 17].map(n => {
+    return [5, 6, 7, 8, 9, 10, 11, 12, 13, 17].map(n => {
         const nums = new Set();
         S.contests.slice(-n).forEach(c => c.numbers.forEach(x => nums.add(x)));
         const count = nums.size;
@@ -160,11 +160,12 @@ function computeHistorico() {
         const contest = S.contests[i];
         const target = contest.numbers;
         const pool = new Set();
-        let sena = null, quina = null;
+        let sena = null, quina = null, quadra = null;
 
         for (let j = 1; j <= i; j++) {
             S.contests[i - j].numbers.forEach(num => pool.add(num));
             const covered = target.filter(num => pool.has(num)).length;
+            if (quadra === null && covered >= 4) quadra = j;
             if (quina === null && covered >= 5) quina = j;
             if (sena === null && covered === 6) { sena = j; break; }
         }
@@ -174,7 +175,8 @@ function computeHistorico() {
             data: contest.data,
             numbers: target,
             sena,
-            quina
+            quina,
+            quadra
         });
     }
 
@@ -387,6 +389,7 @@ function renderHistorico(data) {
             <td style="font-size:11px;font-family:monospace;letter-spacing:.5px">${numsStr}</td>
             <td style="text-align:center;font-weight:700;color:var(--green-dark)">${r.sena ?? '—'}</td>
             <td style="text-align:center;font-weight:600;color:var(--blue)">${r.quina ?? '—'}</td>
+            <td style="text-align:center;font-weight:600;color:#8e44ad">${r.quadra ?? '—'}</td>
         </tr>`;
     }).join('');
 }
@@ -686,12 +689,14 @@ function renderBets() {
     if (S.bets.length) {
         const groupCount = S.group.size;
         const c6 = groupCount >= 6 ? comb(groupCount, 6) : null;
+        // Uma aposta com k números contém C(k,6) combinações de 6
+        const perBet = comb(S.settings.betSize, 6) || 1;
         const n = S.bets.length;
         let probHTML = '';
         if (c6) {
             probHTML = `<br><span style="font-size:12px;font-weight:400;color:var(--green-dark)">
-                1 aposta: ${fmtOdds(c6)} &nbsp;·&nbsp;
-                ${n} aposta(s): 1 em ${Math.round(c6 / n).toLocaleString('pt-BR')}
+                1 aposta: 1 em ${Math.max(1, Math.round(c6 / perBet)).toLocaleString('pt-BR')} &nbsp;·&nbsp;
+                ${n} aposta(s): 1 em ${Math.max(1, Math.round(c6 / (n * perBet))).toLocaleString('pt-BR')}
             </span>`;
         }
         let txt = '';
