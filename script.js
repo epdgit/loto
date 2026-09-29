@@ -766,10 +766,14 @@ function printPDF() {
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yyyy = now.getFullYear();
     const dateStr = `${dd}-${mm}-${yyyy}`;
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const timeStr = `${hh}${mi}${ss}`;
     const grupoStr = S_FILTER.preGroup
         ? `Ult${S_FILTER.preGroup.n}`
         : 'Grupo aleatório';
-    const pdfTitle = `Gerador Mega ${dateStr} - ${grupoStr}`;
+    const pdfTitle = `Gerador Mega ${dateStr} - ${timeStr} - ${grupoStr}`;
 
     const val = parseFloat(String(S.settings.betValue).replace(',', '.'));
     const hasVal = !isNaN(val) && val > 0;
