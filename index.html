@@ -217,6 +217,30 @@
             </div>
         </div>
 
+        <!-- 7. CHECAGEM DE APOSTAS (hidden until ODS loaded) -->
+        <div class="card hidden" id="section-checagem">
+            <div class="card-header">🔎 Checagem de Apostas</div>
+            <div class="card-body">
+                <p class="muted" style="margin-bottom:10px">
+                    Cole o array com suas apostas abaixo para checar contra o <strong>último concurso</strong> carregado.
+                    Suporta jogos de 6 ou mais dezenas e até 200 apostas.
+                </p>
+                <p style="font-size:12px;color:#555;margin-bottom:8px">
+                    Formato esperado: <code>[[1,2,3,4,5,6], [10,11,12,13,14,15]]</code>
+                </p>
+                <textarea id="checagem-input"
+                    placeholder="Ex: [[1,2,3,4,5,6], [7,8,9,10,11,12,13], [20,21,22,23,24,25,26,27,28]]"
+                    style="width:100%;min-height:120px;padding:10px;font-size:13px;font-family:monospace;
+                           border:1px solid #d0d5dd;border-radius:6px;resize:vertical;box-sizing:border-box;
+                           line-height:1.5;color:#1a1a1a;background:#fafafa"></textarea>
+                <div class="btn-row" style="margin-top:8px">
+                    <button class="btn-blue btn-sm" onclick="checagemRun()">🔎 Checar</button>
+                    <button class="btn-outline btn-sm" id="btn-checagem-print" disabled style="margin-left:auto">🖨️ Imprimir relatório</button>
+                </div>
+                <div id="checagem-result" style="margin-top:14px"></div>
+            </div>
+        </div>
+
     </div><!-- /main-col -->
 
     <!-- ── SIDEBAR DIREITA (fixa) ─────────────────────────── -->
@@ -262,8 +286,6 @@
                             <option value="13">13 números</option>
                             <option value="14">14 números</option>
                             <option value="15">15 números</option>
-                            <option value="16">16 números</option>
-                            <option value="17">17 números</option>
                         </select>
                     </label>
                     <label class="setting-lbl">
@@ -302,6 +324,23 @@
                     <button class="btn-outline btn-sm" id="btn-add-one" onclick="addRandomBet()" disabled>➕ Nova</button>
                     <button class="btn-secondary btn-sm" id="btn-clear-bets" onclick="clearBets()" disabled>🗑 Limpar</button>
                     <button class="btn-primary btn-sm" id="btn-print" onclick="printPDF()" disabled style="margin-left:auto">🖨️ PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ARRAY FINAL -->
+        <div class="card" id="section-array-final">
+            <div class="card-header">📦 Array Final</div>
+            <div class="card-body">
+                <p class="muted" style="margin-bottom:8px;font-size:12px">
+                    Alimentado automaticamente ao clicar em <strong>PDF</strong> em "Apostas Geradas".
+                    Use o array totalizador para copiar todas as apostas na Checagem.
+                </p>
+                <div id="array-final-list"><p class="muted">Nenhuma aposta impressa ainda.</p></div>
+                <div id="array-final-total"></div>
+                <div class="btn-row" style="margin-top:10px">
+                    <button class="btn-secondary btn-sm" onclick="arrayFinalClearAll()">🗑 Limpar todos</button>
+                    <button class="btn-primary btn-sm" id="btn-array-final-print" onclick="arrayFinalPrint()" disabled style="margin-left:auto">🖨️ PDF</button>
                 </div>
             </div>
         </div>
@@ -628,3 +667,4 @@
 <script src="script.js"></script>
 </body>
 </html>
+

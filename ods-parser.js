@@ -50,3 +50,4 @@ class ODSParser {
         return contests.sort((a, b) => a.concurso - b.concurso);
     }
 }
+

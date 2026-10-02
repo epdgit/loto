@@ -966,3 +966,178 @@ body {
     margin-bottom: 8px;
     font-weight: 600;
 }
+
+
+/* ============================================================
+   ARRAY FINAL
+   ============================================================ */
+
+.af-batch {
+    border: 1px solid #c8e6da;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #f6fbf9;
+}
+
+.af-batch-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.af-batch-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1c8059;
+}
+
+.af-del-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: #ffe5e5;
+    color: #c0392b;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.af-del-btn:hover { background: #f5c6c6; }
+
+.af-batch-array {
+    font-size: 11px;
+    font-family: monospace;
+    color: #2d3a3a;
+    background: #eef7f3;
+    border-radius: 4px;
+    padding: 6px 8px;
+    word-break: break-all;
+    line-height: 1.6;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.af-total {
+    border: 2px solid #1c8059;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    background: #e6f5ef;
+}
+
+.af-total-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1c8059;
+    margin-bottom: 6px;
+}
+
+.af-total-array {
+    font-size: 11px;
+    font-family: monospace;
+    color: #1a3a2a;
+    word-break: break-all;
+    line-height: 1.6;
+    max-height: 100px;
+    overflow-y: auto;
+    background: #d4eee3;
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+/* ============================================================
+   CHECAGEM DE APOSTAS
+   ============================================================ */
+
+.chk-error {
+    color: #c0392b;
+    background: #ffe5e5;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.chk-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fafafa;
+    transition: background .15s;
+}
+
+.chk-card.chk-badge-quadra {
+    background: #fffde7;
+    border-color: #f9a825;
+}
+
+.chk-card.chk-badge-quina {
+    background: #fff3e0;
+    border-color: #ef6c00;
+}
+
+.chk-card.chk-badge-sena {
+    background: #e8f5e9;
+    border-color: #2e7d32;
+    box-shadow: 0 2px 8px rgba(46,125,50,.15);
+}
+
+.chk-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.chk-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+}
+
+.chk-hits {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1c8059;
+}
+
+.chk-badge-quadra .chk-hits { color: #f57f17; }
+.chk-badge-quina  .chk-hits { color: #e65100; }
+.chk-badge-sena   .chk-hits { color: #1b5e20; }
+
+.chk-circles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.chk-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.chk-hit {
+    background: #1c8059;
+    color: #fff;
+    box-shadow: 0 0 0 2px #a8dfc5;
+}
+
+.chk-miss {
+    background: #fff;
+    color: #333;
+    border: 2px solid #bbb;
+}

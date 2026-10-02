@@ -16,6 +16,10 @@ const S = {
     }
 };
 
+// ── ARRAY FINAL (acumulador de lotes impressos) ────────────
+const S_ARRAY_FINAL = []; // [{ id, bets, label, timestamp }]
+let _afCounter = 0;
+
 // ── RASTREAMENTO DE FILTROS (para PDF) ─────────────────────
 const S_FILTER = {
     preGroup: null,          // { n: 9 } | null (se null = grupo manual/aleatório)
@@ -224,6 +228,8 @@ function renderODSAnalysis() {
     const last = S.contests[S.contests.length - 1];
 
     document.getElementById('section-analysis').classList.remove('hidden');
+    const secCheck = document.getElementById('section-checagem');
+    if (secCheck) secCheck.classList.remove('hidden');
     document.getElementById('ods-info').textContent =
         `${S.contests.length} concursos · Último: #${last.concurso} (${last.data}) · Dezenas: ${last.numbers.join(', ')}`;
 
@@ -766,14 +772,10 @@ function printPDF() {
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yyyy = now.getFullYear();
     const dateStr = `${dd}-${mm}-${yyyy}`;
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mi = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const timeStr = `${hh}${mi}${ss}`;
     const grupoStr = S_FILTER.preGroup
         ? `Ult${S_FILTER.preGroup.n}`
         : 'Grupo aleatório';
-    const pdfTitle = `Gerador Mega ${dateStr} - ${timeStr} - ${grupoStr}`;
+    const pdfTitle = `Gerador Mega ${dateStr} - ${grupoStr}`;
 
     const val = parseFloat(String(S.settings.betValue).replace(',', '.'));
     const hasVal = !isNaN(val) && val > 0;
@@ -830,7 +832,11 @@ function printPDF() {
 
     // Filtros
     const filterLines = buildFilterSummary()
-        .map(line => `  <div class="filter-line">• ${line}</div>`).join('\n');
+        .map(line => `  <div class="filter-line">• ${line}</div>`).join('\
+');
+
+    // Captura lote para Array Final (antes de abrir a janela)
+    arrayFinalAddBatch(S.bets);
 
     const pw = window.open('', '_blank', 'width=820,height=720');
     pw.document.write(`<!DOCTYPE html>
@@ -1349,6 +1355,274 @@ ${hasVal ? `<div class="total">Valor total: R$ ${(nBets*val).toFixed(2).replace(
 function switchOJGame(game) {
     document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.game === game));
     document.querySelectorAll('.game-panel').forEach(p => p.classList.toggle('active', p.id === 'game-' + game));
+}
+
+// ════════════════════════════════════════════════════════════
+//  ARRAY FINAL
+// ════════════════════════════════════════════════════════════
+
+function arrayFinalAddBatch(bets) {
+    if (!bets || !bets.length) return;
+    _afCounter++;
+    // Build group label from current filter state
+    let groupLabel;
+    if (S_FILTER.preGroup) {
+        groupLabel = `Ult${S_FILTER.preGroup.n}`;
+    } else if (S.group.size === 60) {
+        groupLabel = 'Todos';
+    } else {
+        groupLabel = `Grupo (${S.group.size} núm.)`;
+    }
+    S_ARRAY_FINAL.push({
+        id: Date.now() + Math.random(),
+        bets: bets.map(b => [...b]),
+        label: `Lote ${_afCounter} — ${groupLabel}`,
+        groupLabel
+    });
+    arrayFinalRender();
+}
+
+function arrayFinalDelete(id) {
+    const idx = S_ARRAY_FINAL.findIndex(b => b.id === id);
+    if (idx !== -1) S_ARRAY_FINAL.splice(idx, 1);
+    arrayFinalRender();
+}
+
+function arrayFinalClearAll() {
+    if (!S_ARRAY_FINAL.length) return;
+    if (!confirm('Limpar todos os arrays do Array Final?')) return;
+    S_ARRAY_FINAL.length = 0;
+    _afCounter = 0;
+    arrayFinalRender();
+}
+
+function arrayFinalRender() {
+    const listEl  = document.getElementById('array-final-list');
+    const totalEl = document.getElementById('array-final-total');
+    const printBtn = document.getElementById('btn-array-final-print');
+    if (!listEl) return;
+
+    if (!S_ARRAY_FINAL.length) {
+        listEl.innerHTML = '<p class="muted">Nenhuma aposta impressa ainda.</p>';
+        if (totalEl) totalEl.innerHTML = '';
+        if (printBtn) printBtn.disabled = true;
+        return;
+    }
+
+    // Individual batches
+    listEl.innerHTML = S_ARRAY_FINAL.map(batch => {
+        const circlesHTML = batch.bets.map(bet =>
+            '[' + bet.map(n => String(n).padStart(2,'0')).join(',') + ']'
+        ).join(', ');
+        return `<div class="af-batch">
+            <div class="af-batch-header">
+                <span class="af-batch-label">${batch.label} — <strong>${batch.bets.length}</strong> aposta(s)</span>
+                <button class="btn-icon af-del-btn" title="Excluir lote" onclick="arrayFinalDelete(${batch.id})">✕</button>
+            </div>
+            <div class="af-batch-array">[${circlesHTML}]</div>
+        </div>`;
+    }).join('');
+
+    // Totalizer
+    const allBets = S_ARRAY_FINAL.flatMap(b => b.bets);
+    const totalArrayStr = '[' + allBets.map(bet => '[' + bet.join(',') + ']').join(', ') + ']';
+    if (totalEl) {
+        totalEl.innerHTML = `<div class="af-total">
+            <div class="af-total-header">📦 Array totalizador — <strong>${allBets.length}</strong> aposta(s)</div>
+            <div class="af-total-array">${totalArrayStr}</div>
+        </div>`;
+    }
+    if (printBtn) printBtn.disabled = false;
+}
+
+function arrayFinalPrint() {
+    if (!S_ARRAY_FINAL.length) return;
+    const allBets = S_ARRAY_FINAL.flatMap(b => b.bets);
+
+    const now = new Date();
+    const dd  = String(now.getDate()).padStart(2,'0');
+    const mm  = String(now.getMonth()+1).padStart(2,'0');
+    const yyyy = now.getFullYear();
+    const pdfTitle = `Array Final — Mega-Sena ${dd}-${mm}-${yyyy}`;
+
+    const batchesHTML = S_ARRAY_FINAL.map((batch) => {
+        const rows = batch.bets.map((bet, idx) => {
+            const circles = bet.map(n =>
+                `<span class="pc">${String(n).padStart(2,'0')}</span>`).join('');
+            return `<div class="pr"><span class="pi">${idx+1}.</span><div>${circles}</div></div>`;
+        }).join('');
+        return `<h2>${batch.label}</h2>${rows}`;
+    }).join('');
+
+    const totalArrayStr = '[' + allBets.map(bet => '[' + bet.join(',') + ']').join(', ') + ']';
+
+    const pw = window.open('', '_blank', 'width=820,height=720');
+    pw.document.write(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>${pdfTitle}</title>
+<style>
+  body{font-family:Arial,sans-serif;color:#1a1a1a;padding:24px;max-width:740px;margin:0 auto}
+  h1{color:#1c8059;font-size:22px;border-bottom:2px solid #1c8059;padding-bottom:8px;margin-bottom:16px}
+  h2{color:#1c8059;font-size:14px;margin:18px 0 6px;border-bottom:1px solid #cce8da;padding-bottom:4px}
+  .pc{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+      border-radius:50%;background:#1c8059;color:#fff;font-weight:bold;font-size:11px;margin:2px}
+  .pr{display:flex;align-items:center;gap:6px;margin:4px 0;border-bottom:1px solid #eee;padding-bottom:4px}
+  .pi{font-weight:bold;font-size:12px;color:#666;min-width:22px}
+  .total-box{background:#e6f5ef;border-radius:8px;padding:12px 16px;margin:16px 0;font-size:12px;
+             border-left:4px solid #1c8059;word-break:break-all;line-height:1.8}
+  .meta-box{background:#f0f7ff;border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+  @media print{body{padding:12px}}
+</style></head><body>
+<h1>🍀 Array Final — Mega-Sena</h1>
+<div class="meta-box">
+  Total de lotes: <strong>${S_ARRAY_FINAL.length}</strong> &nbsp;·&nbsp;
+  Total de apostas: <strong>${allBets.length}</strong> &nbsp;·&nbsp;
+  Gerado em: <strong>${dd}/${mm}/${yyyy}</strong>
+</div>
+${batchesHTML}
+<h2>📦 Array Totalizador</h2>
+<div class="total-box"><strong>${totalArrayStr}</strong></div>
+<script>window.onload=()=>{ document.title='${pdfTitle}'; window.print(); };<\/script>
+</body></html>`);
+    pw.document.close();
+}
+
+// ════════════════════════════════════════════════════════════
+//  CHECAGEM DE APOSTAS
+// ════════════════════════════════════════════════════════════
+
+function checagemRun() {
+    const textarea = document.getElementById('checagem-input');
+    const resultEl = document.getElementById('checagem-result');
+    const raw = (textarea.value || '').trim();
+
+    if (!raw) {
+        resultEl.innerHTML = '<p class="chk-error">Cole o array de apostas no campo acima.</p>';
+        return;
+    }
+    if (!S.contests.length) {
+        resultEl.innerHTML = '<p class="chk-error">Carregue o arquivo ODS primeiro.</p>';
+        return;
+    }
+
+    let bets;
+    try {
+        bets = JSON.parse(raw);
+        if (!Array.isArray(bets) || !bets.length) throw new Error('Array vazio');
+        bets.forEach((b, i) => {
+            if (!Array.isArray(b) || b.length < 6)
+                throw new Error(`Aposta ${i+1} inválida (mínimo 6 números)`);
+        });
+    } catch(e) {
+        resultEl.innerHTML = `<p class="chk-error">⚠ Formato inválido: ${e.message}<br>Use o formato: [[1,2,3,4,5,6], [7,8,9,10,11,12]]</p>`;
+        return;
+    }
+
+    if (bets.length > 200) {
+        resultEl.innerHTML = '<p class="chk-error">Máximo de 200 apostas por checagem.</p>';
+        return;
+    }
+
+    const lastContest = S.contests[S.contests.length - 1];
+    const drawn = lastContest.numbers; // already sorted
+
+    const results = bets.map((bet, idx) => {
+        const hits = bet.filter(n => drawn.includes(n));
+        return { idx, bet: [...bet].sort((a,b)=>a-b), hits, hitCount: hits.length };
+    });
+
+    // Render inline results
+    resultEl.innerHTML = results.map(r => {
+        const badgeClass = r.hitCount >= 6 ? ' chk-badge-sena'
+                         : r.hitCount === 5 ? ' chk-badge-quina'
+                         : r.hitCount === 4 ? ' chk-badge-quadra' : '';
+        const icon = r.hitCount >= 6 ? ' 🏆' : r.hitCount === 5 ? ' 🥈' : r.hitCount === 4 ? ' 🥉' : '';
+        const circles = r.bet.map(n => {
+            const hit = r.hits.includes(n);
+            return `<span class="chk-circle${hit ? ' chk-hit' : ' chk-miss'}">${String(n).padStart(2,'0')}</span>`;
+        }).join('');
+        return `<div class="chk-card${badgeClass}">
+            <div class="chk-card-header">
+                <span class="chk-num">Aposta ${r.idx+1}</span>
+                <span class="chk-hits">${r.hitCount} acerto(s)${icon}</span>
+            </div>
+            <div class="chk-circles">${circles}</div>
+        </div>`;
+    }).join('');
+
+    // Show print button
+    const printBtn = document.getElementById('btn-checagem-print');
+    if (printBtn) {
+        printBtn.disabled = false;
+        printBtn.onclick = () => checagemPrint(results, lastContest);
+    }
+}
+
+function checagemPrint(results, lastContest) {
+    const now = new Date();
+    const dd  = String(now.getDate()).padStart(2,'0');
+    const mm  = String(now.getMonth()+1).padStart(2,'0');
+    const yyyy = now.getFullYear();
+    const pdfTitle = `Checagem Mega-Sena — Concurso ${lastContest.concurso}`;
+
+    const drawnCircles = lastContest.numbers.map(n =>
+        `<span class="pc drawn">${String(n).padStart(2,'00')}</span>`).join('');
+
+    const betsHTML = results.map(r => {
+        const badgeClass = r.hitCount >= 6 ? 'sena' : r.hitCount === 5 ? 'quina' : r.hitCount === 4 ? 'quadra' : '';
+        const icon = r.hitCount >= 6 ? '🏆 SENA!' : r.hitCount === 5 ? '🥈 QUINA!' : r.hitCount === 4 ? '🥉 QUADRA!' : '';
+        const rowClass = badgeClass ? ` chk-row-${badgeClass}` : '';
+        const circles = r.bet.map(n => {
+            const hit = r.hits.includes(n);
+            return `<span class="pc${hit ? ' hit' : ' miss'}">${String(n).padStart(2,'00')}</span>`;
+        }).join('');
+        return `<div class="bet-entry${rowClass}">
+            <div class="bet-header">
+                <span class="bet-label">Aposta ${r.idx+1}</span>
+                <span class="bet-score${badgeClass ? ' score-'+badgeClass : ''}">${r.hitCount} acerto(s)${icon ? ' — '+icon : ''}</span>
+            </div>
+            <div class="circles-row">${circles}</div>
+        </div>`;
+    }).join('');
+
+    const pw = window.open('', '_blank', 'width=820,height=720');
+    pw.document.write(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>${pdfTitle}</title>
+<style>
+  body{font-family:Arial,sans-serif;color:#1a1a1a;padding:24px;max-width:740px;margin:0 auto}
+  h1{color:#1c8059;font-size:22px;border-bottom:2px solid #1c8059;padding-bottom:8px;margin-bottom:16px}
+  .contest-box{background:#e6f5ef;border-radius:8px;padding:12px 16px;margin:0 0 20px;font-size:14px;line-height:2}
+  .pc{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
+      border-radius:50%;font-weight:bold;font-size:12px;margin:3px}
+  .pc.drawn{background:#1c8059;color:#fff}
+  .pc.hit{background:#1c8059;color:#fff;box-shadow:0 0 0 3px #a8dfc5}
+  .pc.miss{background:#fff;color:#333;border:2px solid #bbb}
+  .bet-entry{border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;margin:8px 0}
+  .bet-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .bet-label{font-weight:bold;font-size:13px;color:#555}
+  .bet-score{font-weight:bold;font-size:14px;color:#444}
+  .bet-entry.chk-row-quadra{background:#fffde7;border-color:#f9a825}
+  .bet-entry.chk-row-quina{background:#fff3e0;border-color:#ef6c00}
+  .bet-entry.chk-row-sena{background:#e8f5e9;border-color:#2e7d32}
+  .score-quadra{color:#f57f17}
+  .score-quina{color:#e65100}
+  .score-sena{color:#1b5e20}
+  .circles-row{display:flex;flex-wrap:wrap;gap:2px}
+  .summary-box{background:#f0f7ff;border-radius:8px;padding:12px 16px;margin:16px 0;font-size:13px}
+  @media print{body{padding:12px}}
+</style></head><body>
+<h1>🍀 Checagem de Apostas — Mega-Sena</h1>
+<div class="contest-box">
+  <strong>Concurso sorteado:</strong> #${lastContest.concurso} (${lastContest.data})<br>
+  <strong>Dezenas sorteadas:</strong> ${drawnCircles}
+</div>
+<div class="summary-box">
+  Total de apostas checadas: <strong>${results.length}</strong> &nbsp;·&nbsp;
+  Com 4+ acertos: <strong>${results.filter(r=>r.hitCount>=4).length}</strong>
+</div>
+${betsHTML}
+<script>window.onload=()=>{ document.title='${pdfTitle}'; window.print(); };<\/script>
+</body></html>`);
+    pw.document.close();
 }
 
 // ── INIT ──────────────────────────────────────────────────
