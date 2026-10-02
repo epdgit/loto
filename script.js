@@ -267,7 +267,8 @@ function renderDelayed(allDelays) {
         const allPairs = delayed20.map(d => `[${d.number},${d.delay}]`).join(',');
         el.innerHTML =
             `<div style="margin-bottom:10px">
-                <button class="btn-sm btn-blue" onclick="includeAllDelayed([${allPairs}])">
+                <button class="btn-sm btn-outline" data-add-all-delayed="${allNums}"
+                    onclick="includeAllDelayed([${allPairs}])">
                     ✚ Incluir todos os ${delayed20.length} número(s) com atraso ≥ 20
                 </button>
             </div>` +
@@ -573,6 +574,20 @@ function refreshAnalysisButtons() {
             btn.disabled = true;
         } else {
             btn.textContent = '+ Incluir';
+            btn.classList.remove('btn-sm-done');
+            btn.disabled = false;
+        }
+    });
+    document.querySelectorAll('[data-add-all-delayed]').forEach(btn => {
+        const nums = btn.dataset.addAllDelayed.split(',').map(Number);
+        const allIn = nums.every(n => S.group.has(n));
+        if (allIn) {
+            btn.textContent = '✓ No grupo';
+            btn.classList.add('btn-sm-done');
+            btn.disabled = true;
+        } else {
+            const count = nums.length;
+            btn.textContent = `✚ Incluir todos os ${count} número(s) com atraso ≥ 20`;
             btn.classList.remove('btn-sm-done');
             btn.disabled = false;
         }
