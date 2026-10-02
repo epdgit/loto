@@ -263,7 +263,15 @@ function renderDelayed(allDelays) {
     if (!delayed20.length) {
         el.innerHTML = '<p class="muted">Nenhum número com atraso ≥ 20 concursos.</p>';
     } else {
-        el.innerHTML = delayed20.map(d => `
+        const allNums  = delayed20.map(d => d.number).join(',');
+        const allPairs = delayed20.map(d => `[${d.number},${d.delay}]`).join(',');
+        el.innerHTML =
+            `<div style="margin-bottom:10px">
+                <button class="btn-sm btn-blue" onclick="includeAllDelayed([${allPairs}])">
+                    ✚ Incluir todos os ${delayed20.length} número(s) com atraso ≥ 20
+                </button>
+            </div>` +
+            delayed20.map(d => `
             <div class="delayed-item">
                 <span class="num-circle sm selected">${String(d.number).padStart(2, '0')}</span>
                 <span class="delayed-info">Atraso: <strong>${d.delay}</strong> concursos</span>
@@ -444,6 +452,16 @@ function includeFromDelay(num, delay) {
         S_FILTER.manualInclusions.push({ num, delay });
     }
     addToGroup(num);
+}
+
+function includeAllDelayed(pairs) {
+    // Inclui todos os números com atraso ≥ 20 de uma vez
+    pairs.forEach(([num, delay]) => {
+        if (!S_FILTER.manualInclusions.find(m => m.num === num)) {
+            S_FILTER.manualInclusions.push({ num, delay });
+        }
+        addToGroup(num);
+    });
 }
 
 function removeRangeFromGroup(label, nums) {
