@@ -771,11 +771,15 @@ function printPDF() {
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yyyy = now.getFullYear();
+    const ph = String(now.getHours()).padStart(2, '0');
+    const pmi = String(now.getMinutes()).padStart(2, '0');
+    const ps = String(now.getSeconds()).padStart(2, '0');
     const dateStr = `${dd}-${mm}-${yyyy}`;
+    const timeStr = `${ph}${pmi}${ps}`;
     const grupoStr = S_FILTER.preGroup
         ? `Ult${S_FILTER.preGroup.n}`
         : 'Grupo aleatório';
-    const pdfTitle = `Gerador Mega ${dateStr} - ${grupoStr}`;
+    const pdfTitle = `Gerador Mega ${dateStr} - ${timeStr} - ${grupoStr}`;
 
     const val = parseFloat(String(S.settings.betValue).replace(',', '.'));
     const hasVal = !isNaN(val) && val > 0;
@@ -1443,7 +1447,9 @@ function arrayFinalPrint() {
     const dd  = String(now.getDate()).padStart(2,'0');
     const mm  = String(now.getMonth()+1).padStart(2,'0');
     const yyyy = now.getFullYear();
-    const pdfTitle = `Array Final — Mega-Sena ${dd}-${mm}-${yyyy}`;
+    const hh  = String(now.getHours()).padStart(2,'0');
+    const min = String(now.getMinutes()).padStart(2,'0');
+    const pdfTitle = `Array Final — Mega-Sena ${dd}-${mm}-${yyyy} ${hh}h${min}`;
 
     const batchesHTML = S_ARRAY_FINAL.map((batch) => {
         const rows = batch.bets.map((bet, idx) => {
