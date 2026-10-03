@@ -1141,3 +1141,66 @@ body {
     color: #333;
     border: 2px solid #bbb;
 }
+
+/* ── CHECAGEM — TOTALIZADOR ─────────────────────────────── */
+.chk-summary {
+    background: #f0f7ff;
+    border: 1px solid #c8dff5;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+
+.chk-summary-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+}
+
+.chk-total-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+.chk-total-row {
+    background: #fff;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 8px 6px;
+    text-align: center;
+}
+
+.chk-total-row.chk-total-quadra {
+    background: #fffde7;
+    border-color: #f9a825;
+}
+
+.chk-total-row.chk-total-quina {
+    background: #fff3e0;
+    border-color: #ef6c00;
+}
+
+.chk-total-row.chk-total-sena {
+    background: #e8f5e9;
+    border-color: #2e7d32;
+}
+
+.chk-total-label {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.chk-total-count {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.chk-total-row.chk-total-quadra .chk-total-count { color: #f57f17; }
+.chk-total-row.chk-total-quina  .chk-total-count { color: #e65100; }
+.chk-total-row.chk-total-sena   .chk-total-count { color: #1b5e20; }

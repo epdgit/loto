@@ -1569,8 +1569,26 @@ function checagemRun() {
         return { idx, bet: [...bet].sort((a,b)=>a-b), hits, hitCount: hits.length };
     });
 
+    // Totalizador por faixa de acertos
+    const totals = [2,3,4,5,6].map(k => ({
+        k,
+        count: results.filter(r => r.hitCount === k).length,
+        icon: k >= 6 ? '🏆' : k === 5 ? '🥈' : k === 4 ? '🥉' : ''
+    }));
+    const totalRows = totals.map(t =>
+        `<div class="chk-total-row${t.k >= 6 ? ' chk-total-sena' : t.k === 5 ? ' chk-total-quina' : t.k === 4 ? ' chk-total-quadra' : ''}">
+            <span class="chk-total-label">${t.icon ? t.icon + ' ' : ''}${t.k} acerto${t.k > 1 ? 's' : ''}</span>
+            <span class="chk-total-count">${t.count} aposta${t.count !== 1 ? 's' : ''}</span>
+        </div>`
+    ).join('');
+    const summaryHTML = `
+        <div class="chk-summary">
+            <div class="chk-summary-title">📊 Resumo — ${results.length} aposta${results.length !== 1 ? 's' : ''} checada${results.length !== 1 ? 's' : ''} · Concurso #${lastContest.concurso}</div>
+            <div class="chk-total-grid">${totalRows}</div>
+        </div>`;
+
     // Render inline results
-    resultEl.innerHTML = results.map(r => {
+    const cardsHTML = results.map(r => {
         const badgeClass = r.hitCount >= 6 ? ' chk-badge-sena'
                          : r.hitCount === 5 ? ' chk-badge-quina'
                          : r.hitCount === 4 ? ' chk-badge-quadra' : '';
@@ -1588,15 +1606,28 @@ function checagemRun() {
         </div>`;
     }).join('');
 
-    // Show print button
+    resultEl.innerHTML = summaryHTML + cardsHTML;
+
+    // Enable print and clear buttons
     const printBtn = document.getElementById('btn-checagem-print');
     if (printBtn) {
         printBtn.disabled = false;
-        printBtn.onclick = () => checagemPrint(results, lastContest);
+        printBtn.onclick = () => checagemPrint(results, lastContest, totals);
     }
+    const clearBtn = document.getElementById('btn-checagem-clear');
+    if (clearBtn) clearBtn.disabled = false;
 }
 
-function checagemPrint(results, lastContest) {
+function checagemClear() {
+    document.getElementById('checagem-result').innerHTML = '';
+    document.getElementById('checagem-input').value = '';
+    const printBtn = document.getElementById('btn-checagem-print');
+    if (printBtn) { printBtn.disabled = true; printBtn.onclick = null; }
+    const clearBtn = document.getElementById('btn-checagem-clear');
+    if (clearBtn) clearBtn.disabled = true;
+}
+
+function checagemPrint(results, lastContest, totals) {
     const now = new Date();
     const dd  = String(now.getDate()).padStart(2,'0');
     const mm  = String(now.getMonth()+1).padStart(2,'0');
@@ -1646,7 +1677,18 @@ function checagemPrint(results, lastContest) {
   .score-quina{color:#e65100}
   .score-sena{color:#1b5e20}
   .circles-row{display:flex;flex-wrap:wrap;gap:2px}
-  .summary-box{background:#f0f7ff;border-radius:8px;padding:12px 16px;margin:16px 0;font-size:13px}
+  .summary-box{background:#f0f7ff;border-radius:8px;padding:14px 18px;margin:16px 0;font-size:13px}
+  .summary-title{font-weight:bold;margin-bottom:10px;font-size:14px;color:#1a1a1a}
+  .total-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px}
+  .total-cell{background:#fff;border:1px solid #d0d5dd;border-radius:8px;padding:8px 6px;text-align:center}
+  .total-cell.quadra{background:#fffde7;border-color:#f9a825}
+  .total-cell.quina{background:#fff3e0;border-color:#ef6c00}
+  .total-cell.sena{background:#e8f5e9;border-color:#2e7d32}
+  .total-label{display:block;font-size:11px;color:#666;margin-bottom:4px}
+  .total-val{display:block;font-size:22px;font-weight:bold;color:#1a1a1a}
+  .total-cell.quadra .total-val{color:#f57f17}
+  .total-cell.quina .total-val{color:#e65100}
+  .total-cell.sena .total-val{color:#1b5e20}
   @media print{body{padding:12px}}
 </style></head><body>
 <h1>🍀 Checagem de Apostas — Mega-Sena</h1>
@@ -1655,8 +1697,14 @@ function checagemPrint(results, lastContest) {
   <strong>Dezenas sorteadas:</strong> ${drawnCircles}
 </div>
 <div class="summary-box">
-  Total de apostas checadas: <strong>${results.length}</strong> &nbsp;·&nbsp;
-  Com 4+ acertos: <strong>${results.filter(r=>r.hitCount>=4).length}</strong>
+  <div class="summary-title">📊 Resumo — ${results.length} aposta${results.length!==1?'s':''} checada${results.length!==1?'s':''}</div>
+  <div class="total-grid">
+    ${(totals||[2,3,4,5,6].map(k=>({k,count:results.filter(r=>r.hitCount===k).length,icon:k>=6?'🏆':k===5?'🥈':k===4?'🥉':''}))).map(t=>`
+    <div class="total-cell${t.k>=6?' sena':t.k===5?' quina':t.k===4?' quadra':''}">
+      <span class="total-label">${t.icon?t.icon+' ':''}${t.k} acerto${t.k>1?'s':''}</span>
+      <span class="total-val">${t.count}</span>
+    </div>`).join('')}
+  </div>
 </div>
 ${betsHTML}
 <script>window.onload=()=>{ document.title='${pdfTitle}'; window.print(); };<\/script>
